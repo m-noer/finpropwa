@@ -1,5 +1,12 @@
-var CACHE_NAME = 'my-site-cache-v1';
-var urlsToCache = [
+// sw.js
+
+// CACHE_NAMESPACE
+// CacheStorage is shared between all sites under same domain.
+// A namespace can prevent potential name conflicts and mis-deletion.
+const CACHE_NAMESPACE = 'laporin-'
+
+const PRECACHE = CACHE_NAMESPACE + 'precache-v3'
+const PRECACHE_LIST = [
   '/',
   '/css/style.css',
   '/css/bootstrap-grid.css',
@@ -14,43 +21,57 @@ var urlsToCache = [
   'images/profil3.jpg',
   'images/profil4.jpg',
   'button-09.mp3'
-];
+]
+const RUNTIME = CACHE_NAMESPACE + 'runtime-v1'
+const expectedCaches = [PRECACHE, RUNTIME]
 
-self.addEventListener('install', function(event) {
-  // Perform install steps
+
+self.oninstall = (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache) {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-  );
-});
+    caches.open(PRECACHE)
+    .then(cache => cache.addAll(PRECACHE_LIST))
+    .then(self.skipWaiting())
+    .catch(err => console.log(err))
+  )
+}
 
-self.addEventListener('fetch', function(event) {
+self.onactivate = (event) => {
+  // delete any cache not match expectedCaches for migration.
+  // noticed that we delete by cache instead of by request here.
+  // so we MUST filter out caches opened by this app firstly.
+  // check out sw-precache or workbox-build for an better way.
+  event.waitUntil(
+    caches.keys().then(cacheNames => Promise.all(
+      cacheNames
+        .filter(cacheName => cacheName.startsWith(CACHE_NAMESPACE))
+        .filter(cacheName => !expectedCaches.includes(cacheName))
+        .map(cacheName => caches.delete(cacheName))
+    ))
+  )
+}
+
+self.onfetch = (event) => {
+  // Fastest-while-revalidate
+  const cached = caches.match(event.request);
+  const fixedUrl = `${event.request.url}?${Date.now()}`;
+  const fetched = fetch(fixedUrl, {cache: "no-store"});
+  const fetchedCopy = fetched.then(resp => resp.clone());
+  console.log(`fetch ${fixedUrl}`)
+
+  // Call respondWith() with whatever we get first.
+  // If the fetch fails (e.g disconnected), wait for the cache.
+  // If there’s nothing in cache, wait for the fetch.
+  // If neither yields a response, return offline pages.
   event.respondWith(
-    caches.match(event.request)
-      .then(function(response) {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      }
-    )
+    Promise.race([fetched.catch(_ => cached), cached])
+      .then(resp => resp || fetched)
+      .catch(_ => caches.match('offline.html'))
   );
-});
 
-self.addEventListener('activate', function(event) {
+  // Update the cache with the version we fetched (only for ok status)
   event.waitUntil(
-    caches.keys().then(function(cacheNames) {
-      return Promise.all(
-        cacheNames.filter(function(cacheName){
-          return cacheName != CACHE_NAME
-        }).map(function(cacheName){
-          return caches.delete(cacheName)
-        })
-      );
-    })
+    Promise.all([fetchedCopy, caches.open(RUNTIME)])
+      .then(([response, cache]) => response.ok && cache.put(event.request, response))
+      .catch(_ => {/* eat any errors */})
   );
-});
+}
