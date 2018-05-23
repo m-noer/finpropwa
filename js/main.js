@@ -39,7 +39,7 @@ var post = new Vue({
 });
 
 Vue.component('navbar', {
-  template:'<nav><div class="cell isi-laporan"><a href="home.html" class="active"><i class="fa fa-home fa-lg" aria-hidden="true"></i></a></div><div class="cell isi-laporan"><a href=""><i class="fa fa-user fa-lg"  aria-hidden="true"></i></a></div><div class="cell isi-laporan"><a href=""><i class="fa fa-dollar fa-lg"  aria-hidden="true"></i></a></div><div class="cell isi-laporan"><a href=""><i class="fa fa-list-alt fa-lg"  aria-hidden="true"></i></a></div><div class="cell isi-laporan"><a href=""><i class="fa fa-bars fa-lg" aria-hidden="true"></i></a></div></nav>'
+  template:'<nav><div class="cell isi-laporan"><a href="home.html" class="active"><i class="fa fa-home fa-lg" aria-hidden="true"></i></a></div><div class="cell isi-laporan"><a href="#"><i class="fa fa-user fa-lg"  aria-hidden="true"></i></a></div><div class="cell isi-laporan"><a href="#"><i class="fa fa-dollar fa-lg"  aria-hidden="true"></i></a></div><div class="cell isi-laporan"><a href="#"><i class="fa fa-list-alt fa-lg"  aria-hidden="true"></i></a></div><div class="cell isi-laporan"><a href="#"><i class="fa fa-bars fa-lg" aria-hidden="true"></i></a></div></nav>'
 });
 
 Vue.component('search', {
